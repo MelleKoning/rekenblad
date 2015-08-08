@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using Spire.Pdf;
+using Spire.Pdf.ColorSpace;
 using Spire.Pdf.Graphics;
 
 namespace Rekenblad
@@ -17,27 +18,15 @@ namespace Rekenblad
 
             // Create one page
             PdfPageBase page = doc.Pages.Add();
+            int basislengte = 8;
+            int maxbasisgetal = 14;
+                
 
             Random rnd = new Random();
             for (int pyramide = 1; pyramide <= 3; pyramide++)
             {
-                int basislengte = 8;
-                int maxbasisgetal = 14;
-                pyrArray = new int[basislengte + 2, basislengte + 2];
-                for (int aantal = 1; aantal <= basislengte; aantal++)
-                {
-                    pyrArray[1, aantal] = rnd.Next(1, maxbasisgetal + 1);
-                }
+                GeneratePyramid(basislengte, rnd, maxbasisgetal);
 
-                for (int rij = 2; rij <= basislengte; rij++)
-                {
-                    for (int aantal = 1; aantal <= basislengte; aantal ++)
-                    {
-                        pyrArray[rij, aantal] = pyrArray[rij - 1, aantal] + pyrArray[rij - 1, aantal + 1];
-                    }
-
-                }
-             
                 int papierhoogte = ((int) page.Canvas.Size.Height/3 - 40) * pyramide;
 
                 TekenHelePyramideOpPapier(page, pyrArray, basislengte, papierhoogte);
@@ -50,24 +39,57 @@ namespace Rekenblad
 
         }
 
+        private void GeneratePyramid(int basislengte, Random rnd, int maxbasisgetal)
+        {
+            pyrArray = new int[basislengte + 2, basislengte + 2];
+            for (int aantal = 1; aantal <= basislengte; aantal++)
+            {
+                pyrArray[1, aantal] = rnd.Next(1, maxbasisgetal + 1);
+            }
+
+            for (int rij = 2; rij <= basislengte; rij++)
+            {
+                for (int aantal = 1; aantal <= basislengte; aantal ++)
+                {
+                    pyrArray[rij, aantal] = pyrArray[rij - 1, aantal] + pyrArray[rij - 1, aantal + 1];
+                }
+            }
+        }
+
         private void TekenHelePyramideOpPapier(PdfPageBase page, int[,] pyramide, int basislengte, int papierhoogte)
         {
             PdfSolidBrush blackBrush = new PdfSolidBrush(Color.Black);
             PdfFont helv = new PdfFont(PdfFontFamily.Helvetica, 15f);
             Random rnd = new Random();
+
+            // draw the rectangles 
+            for (int rij = 1; rij <= basislengte; rij++)
+            {
+                for (int aantal = 1; aantal <= (basislengte - rij) + 1; aantal++)
+                {
+                    int x = aantal * 50 + 25 * rij;
+                    int y = papierhoogte - rij * 25;
+                    int rechthook = 50;
+
+                    RectangleF rectangleFLine = new RectangleF(x - 6, y - 6, rechthook+3, 25);
+                    page.Canvas.DrawRectangle( blackBrush, rectangleFLine);
+
+                    RectangleF rectangleF = new RectangleF(x - 4, y - 4, rechthook-1, 22);
+                    PdfLinearGradientBrush gradBrush = new PdfLinearGradientBrush(rectangleF, new PdfRGBColor(200, 200, 200), new PdfRGBColor(200, 200, 200), PdfLinearGradientMode.Horizontal);
+                    page.Canvas.DrawRectangle(gradBrush, rectangleF);
             
+                }
+            }
+
+            // draw all the numbers on the paper
             for (int rij = 1; rij <= basislengte; rij++)
             {
                 for (int aantal = 1; aantal <= (basislengte-rij)+1; aantal++)
                 {
                     Console.Write(pyramide[rij,aantal].ToString()+ " ");
-                    int x = aantal*50 + 25*rij;
+                    int x = aantal*50 + 25*rij+5;
                     int y = papierhoogte - rij*25;
-                    int rechthook = 50;
-                    RectangleF rectangleF = new RectangleF(x-5,y-5,rechthook,25);
-                    PdfLinearGradientBrush  gradBrush = new PdfLinearGradientBrush(rectangleF,new PdfRGBColor(200,200,200),new PdfRGBColor(255,255,255),PdfLinearGradientMode.Horizontal);
                     
-                    page.Canvas.DrawRectangle(gradBrush, x - 5, y - 5, rechthook, 25);
                     if (DezeCelTekenen(basislengte, rnd, rij, aantal))
                     {
                         page.Canvas.DrawString(pyramide[rij, aantal].ToString(),
